@@ -1,4 +1,3 @@
-# gui/dashboard.py
 import streamlit as st
 import cv2
 import numpy as np
@@ -13,6 +12,7 @@ from modules.segmentor import segmentor
 from modules.identifier import Identifier
 from modules.feature_extractor import FeatureExtractor
 from modules.grader import Grader
+from modules.reporter import Reporter
 
 st.set_page_config(
     page_title="Fruit Ripeness Assessment System",
@@ -84,3 +84,18 @@ else:
         with col3:
             st.caption("Contour")
             st.image(contour_rgb, use_container_width=True)
+
+        st.divider()
+
+        # PDF download button
+        st.subheader("Export Report")
+        if st.button("Generate PDF Report"):
+            r = Reporter()
+            filepath = r.generate(img, mask, features, result, fruit)
+            with open(filepath, "rb") as f:
+                st.download_button(
+                    label="Download PDF",
+                    data=f,
+                    file_name=os.path.basename(filepath),
+                    mime="application/pdf"
+                )
