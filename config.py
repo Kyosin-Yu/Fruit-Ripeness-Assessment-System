@@ -9,9 +9,10 @@ ACTIVE_FRUIT = "banana"
 FRUIT_PROFILES = {
     "banana": {
         "hsv_ranges": [
-            # (lower, upper) — covers yellow to green range
-            ([20, 80, 80],[35, 255, 255]),# yellow (ripe)
-            ([35, 80, 80],[85, 255, 255]),# green  (unripe)
+            ([20, 80, 80], [35, 255, 255]), # yellow (ripe)
+            ([35, 80, 80], [85, 255, 255]), # green  (unripe)
+            ([0, 20, 20], [30, 255, 150]), # dark brown (overripe)
+            ([0, 0, 20], [180, 60, 120]), # near-black/very dark skin
         ],
         "ripeness_thresholds": {
             # Based on average Hue of masked fruit
