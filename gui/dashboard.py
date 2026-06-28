@@ -13,6 +13,7 @@ from modules.identifier import Identifier
 from modules.feature_extractor import FeatureExtractor
 from modules.grader import Grader
 from modules.reporter import Reporter
+from modules.detector import Detector
 
 st.set_page_config(
     page_title="Fruit Ripeness Assessment System",
@@ -29,73 +30,102 @@ with st.sidebar:
     st.divider()
     uploaded_file = st.file_uploader("Upload Fruit Image", type=["jpg", "jpeg", "png"])
 
-# --- Main panel ---
+#main panel
 st.title("🍌 Fruit Ripeness Assessment System")
-st.markdown("Upload a fruit image from the sidebar to assess its ripeness level.")
+# Two tabs — image upload and live camera
+tab1, tab2 = st.tabs(["< Image Upload >", "< Live Camera >"])
 
-if uploaded_file is None:
-    st.info("Awaiting image upload...")
-else:
-    # Decode image
-    file_bytes = np.frombuffer(uploaded_file.read(), np.uint8)
-    img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-
-    # Run pipeline
-    preprocessed = Preprocessor().preprocess(img)
-    s = segmentor()
-    mask = s.create_mask(preprocessed)
-    contours = s.get_contours(mask)
-
-    if len(contours) == 0:
-        st.error("No fruit detected. Please try another image.")
+with tab1:
+    if uploaded_file is None:
+        st.info("Awaiting image upload...")
     else:
-        fruit, avg_hue, circular = Identifier().identify(img, mask, contours[0])
-        features = FeatureExtractor().extract(preprocessed, mask)
-        result = Grader().grade(features)
+        # Decode image
+        file_bytes = np.frombuffer(uploaded_file.read(), np.uint8)
+        img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
-        # Draw contour
-        contour_img = img.copy()
-        cv2.drawContours(contour_img, contours, -1, (0, 255, 0), 2)
+        # Run pipeline
+        preprocessed = Preprocessor().preprocess(img)
+        s = segmentor()
+        mask = s.create_mask(preprocessed)
+        contours = s.get_contours(mask)
 
-        # Convert to RGB for Streamlit
-        img_rgb     = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        contour_rgb = cv2.cvtColor(contour_img, cv2.COLOR_BGR2RGB)
+        if len(contours) == 0:
+            st.error("No fruit detected. Please try another image.")
+        else:
+            fruit, avg_hue, circular = Identifier().identify(img, mask, contours[0])
+            features = FeatureExtractor().extract(preprocessed, mask)
+            result = Grader().grade(features)
 
-        # Results metrics
-        st.subheader("Assessment Results")
-        r1, r2, r3, r4, r5 = st.columns(5)
-        r1.metric("Fruit",fruit)
-        r2.metric("Ripeness",result)
-        r3.metric("Hue Mean",f"{features['hue_mean']:.2f}")
-        r4.metric("Sat Mean",f"{features['sat_mean']:.2f}")
-        r5.metric("Blemish Ratio", f"{features['blemish_ratio']:.4f}")
+            # Draw contour
+            contour_img = img.copy()
+            cv2.drawContours(contour_img, contours, -1, (0, 255, 0), 2)
 
-        st.divider()
+            # Convert to RGB for Streamlit
+            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            contour_rgb = cv2.cvtColor(contour_img, cv2.COLOR_BGR2RGB)
 
-        # Image panels
-        st.subheader("Image Analysis")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.caption("Original")
-            st.image(img_rgb, use_container_width=True)
-        with col2:
-            st.caption("Mask")
-            st.image(mask, use_container_width=True)
-        with col3:
-            st.caption("Contour")
-            st.image(contour_rgb, use_container_width=True)
+            # Results metrics
+            st.subheader("Assessment Results")
+            r1, r2, r3, r4, r5 = st.columns(5)
+            r1.metric("Fruit", fruit)
+            r2.metric("Ripeness", result)
+            r3.metric("Hue Mean", f"{features['hue_mean']:.2f}")
+            r4.metric("Sat Mean", f"{features['sat_mean']:.2f}")
+            r5.metric("Blemish Ratio", f"{features['blemish_ratio']:.4f}")
 
-        st.divider()
+            st.divider()
 
-        # PDF download button
-        st.subheader("Export Report")
-        if st.button("Generate PDF Report"):
-            r = Reporter()
-            filepath = r.generate(img, mask, features, result, fruit)
-            with open(filepath, "rb") as f:
-                st.download_button(
-                    label="Download PDF",
-                    data=f,
-                    file_name=os.path.basename(filepath),
-                    mime="application/pdf"
-                )
+            # Image panels
+            st.subheader("Image Analysis")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.caption("Original")
+                st.image(img_rgb, use_container_width=True)
+            with col2:
+                st.caption("Mask")
+                st.image(mask, use_container_width=True)
+            with col3:
+                st.caption("Contour")
+                st.image(contour_rgb, use_container_width=True)
+
+            st.divider()
+
+            # PDF download button
+            st.subheader("Export Report")
+            if st.button("Generate PDF Report"):
+                r = Reporter()
+                filepath = r.generate(img, mask, features, result, fruit)
+                with open(filepath, "rb") as f:
+                    st.download_button(
+                        label="Download PDF",
+                        data=f,
+                        file_name=os.path.basename(filepath),
+                        mime="application/pdf"
+                    )
+
+with tab2:
+    st.subheader("Live Camera Detection")
+    camera_frame = st.camera_input("Point camera at a fruit and capture")
+
+    if camera_frame is not None:
+        # Decode captured frame
+        file_bytes= np.frombuffer(camera_frame.read(), np.uint8)
+        frame= cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+
+        #run detector
+        d= Detector()
+        annotated, results = d.detect(frame)
+
+        #convert to RGB for Streamlit
+        annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+
+        #display annotated frame
+        st.image(annotated_rgb, use_container_width=True)
+
+        #display results table
+        if results:
+            st.subheader("Detection Results")
+            for r in results:
+                st.write(f"**{r['fruit'].capitalize()}** — {r['ripeness']} | Hue: {r['hue']:.2f} | Blemish: {r['blemish']:.4f}")
+        else:
+            st.warning("No fruit detected in the captured frame.")

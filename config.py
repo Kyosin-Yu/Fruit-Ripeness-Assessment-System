@@ -12,7 +12,7 @@ FRUIT_PROFILES = {
             ([20, 80, 80], [35, 255, 255]), # yellow (ripe)
             ([35, 80, 80], [85, 255, 255]), # green  (unripe)
             ([0, 20, 20], [30, 255, 150]), # dark brown (overripe)
-            ([0, 0, 20], [180, 60, 120]), # near-black/very dark skin
+            ([0,  20, 10],   [25, 100, 80]),# very dark brown only
         ],
         "ripeness_thresholds": {
             # Based on average Hue of masked fruit

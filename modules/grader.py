@@ -6,8 +6,8 @@ class Grader:
         self.thresholds = self.profile["ripeness_thresholds"]
 
         # Overripe detection thresholds
-        self.overripe_sat_limit= 150   # below this = desaturated/brown
-        self.overripe_blemish_limit= 0.10  # above this = heavily blemished
+        self.overripe_sat_limit = 80# only catch truly desaturated/brown skin
+        self.overripe_blemish_limit = 0.25# require more blemishes before flagging
 
     def grade(self, features):
         hue_mean = features["hue_mean"]
